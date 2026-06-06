@@ -10,17 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 def _compute_letter_grade(score: int) -> str:
-    if score >= 95: return 'A+'
-    if score >= 90: return 'A'
-    if score >= 85: return 'A-'
-    if score >= 80: return 'B+'
-    if score >= 75: return 'B'
-    if score >= 70: return 'B-'
-    if score >= 65: return 'C+'
-    if score >= 60: return 'C'
-    if score >= 55: return 'C-'
-    if score >= 50: return 'D'
-    return 'F'
+    if score >= 90: return 'A+'
+    if score >= 85: return 'A'
+    if score >= 80: return 'A-'
+    if score >= 75: return 'B+'
+    if score >= 65: return 'B'
+    if score >= 60: return 'B-'
+    if score >= 55: return 'C+'
+    if score >= 50: return 'C'
+    if score >= 40: return 'C-'
+    return 'D'
 
 
 def _compute_github_health(repos: list) -> str:
