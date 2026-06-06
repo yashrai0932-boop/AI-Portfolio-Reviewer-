@@ -20,6 +20,7 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
+        cache-dependency-path: 'portfoliq/package-lock.json'
 
     - name: Set up Java
       uses: actions/setup-java@v3
