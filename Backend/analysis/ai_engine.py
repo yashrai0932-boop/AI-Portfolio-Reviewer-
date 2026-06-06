@@ -340,3 +340,48 @@ Key files:
     if not parsed:
         return {"score": 40, "checks": []}
     return parsed
+
+
+# ============================================
+# Agent: Architecture & File Tree
+# ============================================
+def generate_file_tree_definitions(key_files: list, file_tree: list, repo_name: str) -> list:
+    """Analyze file tree and generate architectural definitions for each file."""
+    # Build a simple tree string to pass to the prompt
+    file_names = []
+    for item in (file_tree or []):
+        if isinstance(item, dict):
+            file_names.append(item.get('path', item.get('name', '')))
+    
+    files_text = '\n'.join([f"- {path}" for path in file_names[:50]])
+    key_contents = '\n\n'.join([f"--- FILE: {f['path']} ---\n{f['content'][:1000]}" for f in key_files[:5]])
+
+    system = """You are a software architect. Look at the provided file tree and key file snippets, and explain the purpose of the most important files in the repository.
+
+Return a JSON array of objects:
+[
+  {
+    "path": "src/index.tsx",
+    "type": "file",
+    "description": "Main entry point for the React application."
+  },
+  {
+    "path": "src/components",
+    "type": "folder",
+    "description": "Contains reusable UI components."
+  }
+]
+Focus on the top 10-15 most structurally important files and folders. Keep descriptions concise (1-2 sentences). Return ONLY a valid JSON array."""
+
+    user = f"""Repository: {repo_name}
+File Tree:
+{files_text}
+
+Key File Snippets:
+{key_contents}"""
+
+    result = _call_nim(settings.NVIDIA_GENERAL_MODEL, system, user)
+    parsed = _parse_json(result)
+    if isinstance(parsed, list):
+        return parsed
+    return []

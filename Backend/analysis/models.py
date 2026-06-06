@@ -50,6 +50,9 @@ class AnalysisReport(models.Model):
     # Error tracking
     error_message = models.TextField(blank=True, default='')
 
+    # Real-time progress tracking
+    current_step = models.CharField(max_length=100, default='Fetching GitHub repositories...')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -72,6 +75,7 @@ class Repository(models.Model):
     scores = models.JSONField(default=dict)
     issues = models.JSONField(default=list)
     strengths = models.JSONField(default=list)
+    file_tree_definitions = models.JSONField(default=list)
 
     def __str__(self):
         return self.name

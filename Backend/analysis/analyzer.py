@@ -44,6 +44,7 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
     """
     try:
         report.status = 'analyzing'
+        report.current_step = 'Fetching GitHub repositories...'
         report.save()
 
         # 1. Parse the GitHub URL
@@ -63,8 +64,8 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
             # Single repo — wrap in list
             import requests
             from django.conf import settings
-            headers = {'Authorization': f'token {user_token or settings.GITHUB_PAT}',
-                       'Accept': 'application/vnd.github+json'}
+            headers = github_service._get_headers(user_token)
+            headers['Accept'] = 'application/vnd.github+json'
             resp = requests.get(f'{settings.GITHUB_API_BASE}/repos/{owner}/{parsed["repo"]}',
                                 headers=headers, timeout=15)
             raw_repos = [resp.json()] if resp.status_code == 200 else []
@@ -92,10 +93,16 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
         all_languages = {}
         repo_summaries = []
 
+        report.current_step = 'Reading source code files...'
+        report.save()
+
         for repo_data in repos:
             repo_name = repo_data.get('name', '')
             repo_owner = repo_data.get('owner', {}).get('login', owner)
             logger.info(f'Analyzing repository: {repo_owner}/{repo_name}')
+
+            report.current_step = f'Reading files for {repo_name}...'
+            report.save()
 
             # Fetch data for this repo
             readme = github_service.fetch_readme(repo_owner, repo_name, user_token)
@@ -111,13 +118,27 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
             all_files_for_skills.extend(key_files)
 
             # Run AI analysis on this repo
+            report.current_step = f'AI: Analyzing code quality for {repo_name}...'
+            report.save()
             code_result = ai_engine.analyze_code_quality(key_files, repo_name) if key_files else {
                 "score": 50, "readability": 50, "naming_conventions": 50, "architecture": 50,
                 "strengths": [], "issues": ["No source files found"], "patterns_found": []}
 
+            report.current_step = f'AI: Reviewing documentation for {repo_name}...'
+            report.save()
             doc_result = ai_engine.analyze_documentation(readme, repo_name)
+            
+            report.current_step = f'AI: Scanning security for {repo_name}...'
+            report.save()
             security_result = ai_engine.analyze_security(key_files, repo_name) if key_files else {"score": 70, "issues": []}
+            
+            report.current_step = f'AI: Checking production readiness for {repo_name}...'
+            report.save()
             production_result = ai_engine.analyze_production_readiness(key_files, file_tree, repo_name)
+
+            report.current_step = f'AI: Generating architecture tree for {repo_name}...'
+            report.save()
+            file_tree_defs = ai_engine.generate_file_tree_definitions(key_files, file_tree, repo_name)
 
             code_score = code_result.get('score', 50)
             doc_score = doc_result.get('score', 30)
@@ -157,6 +178,7 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
                 },
                 issues=code_result.get('issues', []) + [i.get('title', '') for i in security_result.get('issues', [])],
                 strengths=code_result.get('strengths', []),
+                file_tree_definitions=file_tree_defs,
             )
 
             repo_summaries.append({
@@ -190,14 +212,24 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
         )
 
         # 5. Run cross-repo AI analyses
+        report.current_step = 'AI: Detecting skills & gaps...'
+        report.save()
         skills_result = ai_engine.detect_skills(all_languages, all_files_for_skills[:15], repo_summaries)
         detected_skill_names = [s.get('name', '') for s in skills_result.get('detected', [])]
 
+        report.current_step = 'AI: Simulating recruiter perspective...'
+        report.save()
         recruiter_result = ai_engine.simulate_recruiter(repo_summaries, score_breakdown, detected_skill_names)
+        
+        report.current_step = 'Generating recommendations & roasts...'
+        report.save()
         roasts = ai_engine.generate_roasts(repo_summaries, score_breakdown, all_issues)
         recommendations = ai_engine.generate_recommendations(
             score_breakdown, all_issues, skills_result.get('missing', [])
         )
+
+        report.current_step = 'Computing scores & benchmarks...'
+        report.save()
 
         # Collect all security issues from repos
         security_issues = []

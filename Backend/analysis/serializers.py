@@ -8,6 +8,7 @@ class RepositorySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'url', 'language',
             'stars', 'forks', 'last_updated', 'scores', 'issues', 'strengths',
+            'file_tree_definitions',
         ]
 
 
@@ -17,7 +18,7 @@ class AnalysisReportListSerializer(serializers.ModelSerializer):
         model = AnalysisReport
         fields = [
             'id', 'github_url', 'status', 'overall_score', 'letter_grade',
-            'created_at', 'error_message',
+            'created_at', 'error_message', 'current_step',
         ]
 
 
@@ -37,7 +38,7 @@ class AnalysisReportDetailSerializer(serializers.ModelSerializer):
             'security_issues', 'documentation_checks', 'production_checks',
             'recommendations', 'roasts', 'benchmarks',
             'repositories',
-            'error_message', 'created_at', 'updated_at',
+            'error_message', 'current_step', 'created_at', 'updated_at',
         ]
 
 
