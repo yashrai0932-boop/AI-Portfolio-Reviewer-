@@ -123,6 +123,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL,
+    'capacitor://localhost',
+    'http://localhost',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
