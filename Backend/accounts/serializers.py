@@ -25,7 +25,8 @@ class UserDetailsSerializer(serializers.ModelSerializer):
 
 
 class CustomRegisterSerializer(RegisterSerializer):
-    """Custom registration serializer that includes first/last name."""
+    """Custom registration serializer that includes first/last name and ignores username."""
+    username = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
 
