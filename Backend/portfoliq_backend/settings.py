@@ -170,9 +170,8 @@ SIMPLE_JWT = {
 # django-allauth
 # ============================================
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = {
-    'username': {'required': False},
-}
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Set to 'mandatory' in production
 ACCOUNT_UNIQUE_EMAIL = True
 
