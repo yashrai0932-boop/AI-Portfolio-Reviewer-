@@ -189,3 +189,33 @@ def get_key_files(owner: str, repo: str, user_token=None) -> list:
                 content = content[:8000] + '\n... (truncated)'
             result.append({'path': f['path'], 'content': content})
     return result
+
+
+def fetch_user_profile(username: str, user_token=None) -> dict:
+    """Fetch the public profile of a GitHub user."""
+    resp = requests.get(
+        f'{settings.GITHUB_API_BASE}/users/{username}',
+        headers=_get_headers(user_token),
+        timeout=15,
+    )
+    if resp.status_code != 200:
+        logger.error(f'GitHub API error fetching user profile: {resp.status_code}')
+        return {}
+    data = resp.json()
+    return {
+        'login': data.get('login', ''),
+        'name': data.get('name', ''),
+        'avatar_url': data.get('avatar_url', ''),
+        'bio': data.get('bio', ''),
+        'company': data.get('company', ''),
+        'location': data.get('location', ''),
+        'blog': data.get('blog', ''),
+        'email': data.get('email', ''),
+        'twitter_username': data.get('twitter_username', ''),
+        'followers': data.get('followers', 0),
+        'following': data.get('following', 0),
+        'public_repos': data.get('public_repos', 0),
+        'public_gists': data.get('public_gists', 0),
+        'html_url': data.get('html_url', ''),
+        'created_at': data.get('created_at', ''),
+    }

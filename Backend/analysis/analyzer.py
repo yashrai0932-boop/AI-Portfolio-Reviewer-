@@ -57,6 +57,13 @@ def run_analysis(report: AnalysisReport, user_token: str = None):
             report.save()
             return
 
+        # Fetch and save the GitHub user profile
+        report.current_step = 'Fetching GitHub user profile...'
+        report.save()
+        profile = github_service.fetch_user_profile(owner, user_token)
+        report.github_profile = profile
+        report.save()
+
         # 2. Fetch repositories
         if parsed['is_profile']:
             raw_repos = github_service.fetch_user_repos(owner, user_token)

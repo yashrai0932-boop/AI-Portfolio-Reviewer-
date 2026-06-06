@@ -47,6 +47,9 @@ class AnalysisReport(models.Model):
     # Benchmarks
     benchmarks = models.JSONField(default=dict)
 
+    # GitHub user profile data
+    github_profile = models.JSONField(default=dict)
+
     # Error tracking
     error_message = models.TextField(blank=True, default='')
 

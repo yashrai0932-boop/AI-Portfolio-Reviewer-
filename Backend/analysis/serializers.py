@@ -37,7 +37,7 @@ class AnalysisReportDetailSerializer(serializers.ModelSerializer):
             'detected_skills', 'missing_skills',
             'security_issues', 'documentation_checks', 'production_checks',
             'recommendations', 'roasts', 'benchmarks',
-            'repositories',
+            'repositories', 'github_profile',
             'error_message', 'current_step', 'created_at', 'updated_at',
         ]
 
