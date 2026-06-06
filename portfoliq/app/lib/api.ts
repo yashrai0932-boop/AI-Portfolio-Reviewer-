@@ -1,10 +1,38 @@
 /**
  * ProtfoliQ API Client
  * Handles all communication with the Django backend.
- * Uses cookies for JWT authentication (httpOnly, set by Django).
+ * Uses localStorage for JWT tokens (required for cross-origin deployment).
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+// ============================================
+// Token Management
+// ============================================
+
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token');
+}
+
+function getRefreshTokenValue(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refresh_token');
+}
+
+function setTokens(access: string, refresh: string) {
+  localStorage.setItem('access_token', access);
+  localStorage.setItem('refresh_token', refresh);
+}
+
+export function clearTokens() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+// ============================================
+// Core Fetch Wrapper
+// ============================================
 
 interface RequestOptions {
   method?: string;
@@ -15,11 +43,17 @@ interface RequestOptions {
 async function apiFetch<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
 
+  const token = getAccessToken();
+  const authHeaders: Record<string, string> = {};
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const config: RequestInit = {
     method,
-    credentials: 'include', // Send cookies
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...headers,
     },
   };
@@ -34,13 +68,23 @@ async function apiFetch<T = unknown>(path: string, options: RequestOptions = {})
     // Try to refresh the token
     const refreshed = await refreshToken();
     if (refreshed) {
-      // Retry the request
-      const retryRes = await fetch(`${API_BASE}${path}`, config);
+      // Update the Authorization header with the new token
+      const newToken = getAccessToken();
+      const retryConfig: RequestInit = {
+        ...config,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${newToken}`,
+          ...headers,
+        },
+      };
+      const retryRes = await fetch(`${API_BASE}${path}`, retryConfig);
       if (!retryRes.ok) {
         throw new ApiError(retryRes.status, await retryRes.text());
       }
       return retryRes.json();
     }
+    clearTokens();
     throw new ApiError(401, 'Unauthorized');
   }
 
@@ -75,11 +119,21 @@ export class ApiError extends Error {
 // Auth
 // ============================================
 
+interface AuthResponse {
+  access: string;
+  refresh: string;
+  user: unknown;
+}
+
 export async function login(email: string, password: string) {
-  return apiFetch('/auth/login/', {
+  const data = await apiFetch<AuthResponse>('/auth/login/', {
     method: 'POST',
     body: { email, password },
   });
+  if (data.access && data.refresh) {
+    setTokens(data.access, data.refresh);
+  }
+  return data;
 }
 
 export async function register(
@@ -89,7 +143,7 @@ export async function register(
   firstName?: string,
   lastName?: string,
 ) {
-  return apiFetch('/auth/registration/', {
+  const data = await apiFetch<AuthResponse>('/auth/registration/', {
     method: 'POST',
     body: {
       email,
@@ -99,10 +153,19 @@ export async function register(
       last_name: lastName || '',
     },
   });
+  if (data.access && data.refresh) {
+    setTokens(data.access, data.refresh);
+  }
+  return data;
 }
 
 export async function logout() {
-  return apiFetch('/auth/logout/', { method: 'POST' });
+  try {
+    await apiFetch('/auth/logout/', { method: 'POST' });
+  } catch {
+    // ignore
+  }
+  clearTokens();
 }
 
 export async function getCurrentUser() {
@@ -110,13 +173,24 @@ export async function getCurrentUser() {
 }
 
 export async function refreshToken(): Promise<boolean> {
+  const refresh = getRefreshTokenValue();
+  if (!refresh) return false;
   try {
-    await fetch(`${API_BASE}/auth/token/refresh/`, {
+    const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
     });
-    return true;
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (data.access) {
+      localStorage.setItem('access_token', data.access);
+      if (data.refresh) {
+        localStorage.setItem('refresh_token', data.refresh);
+      }
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -127,10 +201,14 @@ export async function getGitHubOAuthUrl(): Promise<{ url: string }> {
 }
 
 export async function loginWithGitHub(code: string) {
-  return apiFetch('/auth/github/', {
+  const data = await apiFetch<AuthResponse>('/auth/github/', {
     method: 'POST',
     body: { code },
   });
+  if (data.access && data.refresh) {
+    setTokens(data.access, data.refresh);
+  }
+  return data;
 }
 
 // ============================================
