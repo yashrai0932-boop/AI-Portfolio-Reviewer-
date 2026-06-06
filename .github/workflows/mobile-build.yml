@@ -34,6 +34,8 @@ jobs:
 
     - name: Build Next.js Static Export
       working-directory: ./portfoliq
+      env:
+        BUILD_MOBILE: 'true'
       run: npm run build
 
     - name: Sync Capacitor Android
