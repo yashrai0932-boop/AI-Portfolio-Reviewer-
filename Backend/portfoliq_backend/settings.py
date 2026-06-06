@@ -191,8 +191,8 @@ NVIDIA_NIM_API_KEY = os.getenv('NVIDIA_NIM_API_KEY', '')
 NVIDIA_NIM_BASE_URL = 'https://integrate.api.nvidia.com/v1'
 
 # Models
-NVIDIA_CODE_REVIEW_MODEL = 'deepseek-ai/deepseek-r1'
-NVIDIA_GENERAL_MODEL = 'meta/llama-3.1-70b-instruct'
+NVIDIA_CODE_REVIEW_MODEL = 'meta/llama-3.1-8b-instruct'
+NVIDIA_GENERAL_MODEL = 'meta/llama-3.1-8b-instruct'
 
 # ============================================
 # GitHub API
