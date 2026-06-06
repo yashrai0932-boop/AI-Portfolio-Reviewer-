@@ -1,3 +1,4 @@
+import uuid
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from dj_rest_auth.registration.serializers import RegisterSerializer
@@ -25,10 +26,19 @@ class UserDetailsSerializer(serializers.ModelSerializer):
 
 
 class CustomRegisterSerializer(RegisterSerializer):
-    """Custom registration serializer that includes first/last name and ignores username."""
+    """Custom registration serializer that includes first/last name and auto-generates username."""
     username = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_username(self, username):
+        """Auto-generate a unique username if none is provided."""
+        if not username:
+            # Generate from email prefix + short UUID to guarantee uniqueness
+            email = self.initial_data.get('email', '')
+            base = email.split('@')[0] if email else 'user'
+            username = f"{base}_{uuid.uuid4().hex[:8]}"
+        return username
 
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
